@@ -2,6 +2,8 @@ from fastapi import (
     APIRouter
 )
 import json
+import ast
+
 from utils.ai import ai_generator, embedding_generator
 from utils.db import collection
 from utils.search_helper import augement_description, clean_query
@@ -11,29 +13,55 @@ router = APIRouter()
 
 ### generates listsings and adds to chromadb collection. Listings are not persistant need to be created each time application is started ###
 
+# @router.post('/generate-listings')
+# async def Generate_listing():
+    
+#     ### 10 listings generaated using ai_generator() ###
+
+#     list_of_listings = [ai_generator(property_generator_prompt) for _ in range(10)]
+
+#     ### embeddings collected for each listing, then listing and embeddings added to chromadb collection ###
+
+#     try:
+#         for i, text in enumerate(list_of_listings):
+#             embedding = embedding_generator(text)  # Convert text to embedding
+            
+#             collection.add(
+#                 ids=[str(i)],  # Unique ID for each entry
+#                 embeddings=[embedding],
+#                 metadatas=[{"listing": text}]  # Optional metadata
+#             )
+        
+#     except Exception as e:
+#         print(f"Error: {e}")
+
+#     return {"listings": list_of_listings}
+
+
 @router.post('/generate-listings')
 async def Generate_listing():
-    
-    ### 10 listings generaated using ai_generator() ###
+    try: 
+        string_list_of_listings = ai_generator(property_generator_prompt)
 
-    list_of_listings = [ai_generator(property_generator_prompt) for _ in range(10)]
+        list_of_listings = ast.literal_eval(string_list_of_listings)
 
-    ### embeddings collected for each listing, then listing and embeddings added to chromadb collection ###
+        with open("listings.txt", "w") as file:            
+            for dictionary in list_of_listings:
+                file.write(json.dumps(dictionary) + "\n") 
 
-    try:
         for i, text in enumerate(list_of_listings):
-            embedding = embedding_generator(text)  # Convert text to embedding
-            
-            collection.add(
-                ids=[str(i)],  # Unique ID for each entry
-                embeddings=[embedding],
-                metadatas=[{"listing": text}]  # Optional metadata
-            )
+                embedding = embedding_generator(str(text)) # Convert text to embedding
+                
+                collection.add(
+                    ids=[str(i)],  # Unique ID for each entry
+                    embeddings=[embedding],
+                    metadatas=[{"listing": json.dumps(text)}]  # Optional metadata
+                )
         
+        return {"listings": list_of_listings}
+
     except Exception as e:
         print(f"Error: {e}")
-
-    return {"message": "complete"}
     
 ### Search of chromadb collection for most relevant properties to the buyer, returning n number of results. A personalised description is added to the result, tailored to the buyers preferences ### 
 
