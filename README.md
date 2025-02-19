@@ -12,4 +12,4 @@ Pleaase note the listings.py file is an example. When you run the application th
 
 This app requires a config file called "config.py" saved in the main directory. It should have the following content:
 openai_key=<YOUR OPEN AI KEY>
-openai_base="https://openai.vocareum.com/v1"
+openai_base=<your base url>
